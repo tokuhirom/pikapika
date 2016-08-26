@@ -38,6 +38,20 @@ class MountainCell {
 // ----------------------------------------------------------------------
 
 class Rabbit {
+    getCharacter() {
+        return "🐰";
+    }
+
+    getColor() {
+        return "#cc00cc";
+    }
+}
+
+class Tiger {
+    getCharacter() {
+        return "🐯";
+    }
+
     getColor() {
         return "#cc00cc";
     }
@@ -97,6 +111,10 @@ class Game {
         for (let i=0; i<num_rabbits; i++) {
             characters.push(new CharacterContainer(getRandomInt(0, 640), getRandomInt(0, 480), new Rabbit()));
         }
+        const num_tigers = getRandomInt(2, 10);
+        for (let i=0; i<num_tigers; i++) {
+            characters.push(new CharacterContainer(getRandomInt(0, 640), getRandomInt(0, 480), new Tiger()));
+        }
         this.characters = characters;
     }
 
@@ -127,11 +145,22 @@ class Game {
         // move characters
         // eat something?
 
+        // work tigers.
+        // if hungry?
+        //    there's food?
+        //       eat(kill it, and hunger--)
+        //    else
+        //       go to food
+        //    end
+        // else
+        //    hunger++
+        // end
+
         // render characters
         for (let c of this.characters) {
             this.ctx.fillStyle=c.character.getColor();
             this.ctx.font="8px Helvetica";
-            this.ctx.fillText("🐰", c.x, c.y, 10);
+            this.ctx.fillText(c.character.getCharacter(), c.x, c.y, 10);
         }
     }
 
