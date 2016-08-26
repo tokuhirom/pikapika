@@ -1,3 +1,12 @@
+// Returns a random integer between min (included) and max (excluded)
+// // Using Math.round() will give you a non-uniform distribution!
+//
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
 class ForestCell {
     getColor() {
         return "#008800";
@@ -22,6 +31,28 @@ class MountainCell {
     }
 }
 
+// ----------------------------------------------------------------------
+//
+// Animals
+//
+// ----------------------------------------------------------------------
+
+class Rabbit {
+    getColor() {
+        return "#cc00cc";
+    }
+}
+
+// ----------------------------------------------------------------------
+
+class CharacterContainer {
+    constructor(x, y, character) {
+        this.x = x;
+        this.y = y;
+        this.character = character;
+    }
+}
+
 class Map {
     constructor() {
         this.width  = 64;
@@ -30,7 +61,7 @@ class Map {
         this.cells = [];
         for (let y=0; y<this.height; y++) {
             for (let x=0; x<this.width; x++) {
-                const n = Math.floor((Math.random() * 100) + 1); // 1〜100
+                const n = getRandomInt(0, 100);
                 if (n<=7) {
                     this.put(x, y, new SeaCell());
                 } else if (n <= 30) {
@@ -53,27 +84,74 @@ class Map {
     }
 }
 
-function mainLoop(c) {
-    const map = new Map();
+class Game {
+    constructor() {
+        this.map = new Map();
+        this.put_characters();
+        this.init_canvas();
+    }
 
-    c.width = 512;
-    c.height = 480;
+    put_characters() {
+        const characters = [];
+        const num_rabbits = getRandomInt(2, 10);
+        for (let i=0; i<num_rabbits; i++) {
+            characters.push(new CharacterContainer(getRandomInt(0, 640), getRandomInt(0, 480), new Rabbit()));
+        }
+        this.characters = characters;
+    }
 
-    var ctx = c.getContext("2d");
-    ctx.fillStyle="#000000";
-    ctx.fillRect(0,0,640,480);
+    init_canvas() {
+        const c = document.getElementById('game');
+        c.width = 512;
+        c.height = 480;
 
-    for (let y=0, l=map.height; y<l; y++) {
-        for (let x=0, m=map.width; x<m; x++) {
-            const cell = map.get(x, y);
-            ctx.fillStyle=cell.getColor();
-            ctx.fillRect(x*10,y*10,10,10);
+        this.ctx = c.getContext("2d");
+        this.ctx.fillStyle="#000000";
+        this.ctx.fillRect(0,0,640,480);
+    }
+
+    run() {
+        this.render_map();
+
+        this.next_tick();
+        setInterval(
+            () => {
+                this.next_tick();
+            }, 1000
+        );
+    }
+
+    next_tick() {
+        this.render_map();
+
+        // move characters
+        // eat something?
+
+        // render characters
+        for (let c of this.characters) {
+            this.ctx.fillStyle=c.character.getColor();
+            this.ctx.font="8px Helvetica";
+            this.ctx.fillText("🐰", c.x, c.y, 10);
+        }
+    }
+
+    render_map() {
+        for (let y=0, l=this.map.height; y<l; y++) {
+            for (let x=0, m=this.map.width; x<m; x++) {
+                const cell = this.map.get(x, y);
+                this.ctx.fillStyle=cell.getColor();
+                this.ctx.fillRect(x*10,y*10,10,10);
+            }
         }
     }
 }
 
+function mainLoop() {
+    const game = new Game();
+    game.run();
+}
+
 document.addEventListener("DOMContentLoaded", function(event) {
-    const c = document.getElementById('game');
-    mainLoop(c);
+    mainLoop();
 });
 
