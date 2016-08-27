@@ -11,11 +11,17 @@ class ForestCell {
     getColor() {
         return "#008800";
     }
+    isCharacterAvailable() {
+        return true;
+    }
 }
 
 class SeaCell {
     getColor() {
         return "#002288";
+    }
+    isCharacterAvailable() {
+        return false;
     }
 }
 
@@ -23,11 +29,17 @@ class GrasslandCell {
     getColor() {
         return "#003300";
     }
+    isCharacterAvailable() {
+        return true;
+    }
 }
 
 class MountainCell {
     getColor() {
         return "#544545";
+    }
+    isCharacterAvailable() {
+        return true;
     }
 }
 
@@ -68,9 +80,9 @@ class CharacterContainer {
 }
 
 class Map {
-    constructor() {
-        this.width  = 64;
-        this.height = 48;
+    constructor(width, height) {
+        this.width  = width;
+        this.height = height;
 
         this.cells = [];
         for (let y=0; y<this.height; y++) {
@@ -99,8 +111,14 @@ class Map {
 }
 
 class Game {
-    constructor() {
-        this.map = new Map();
+    constructor(pixel_width, pixel_height, tile_size, char_size) {
+        this.pixel_width = pixel_width;
+        this.pixel_height = pixel_height;
+        this.tile_width = pixel_width/tile_size;
+        this.tile_height = pixel_height/tile_size;
+        this.tile_size = tile_size;
+        this.char_size = char_size;
+        this.map = new Map(this.tile_width, this.tile_height);
         this.put_characters();
         this.init_canvas();
     }
@@ -109,23 +127,31 @@ class Game {
         const characters = [];
         const num_rabbits = getRandomInt(2, 10);
         for (let i=0; i<num_rabbits; i++) {
-            characters.push(new CharacterContainer(getRandomInt(0, 640), getRandomInt(0, 480), new Rabbit()));
+            let x = getRandomInt(0, this.tile_width);
+            let y = getRandomInt(0, this.tile_height);
+            if (this.map.get(x, y).isCharacterAvailable()) {
+                characters.push(new CharacterContainer(x, y, new Rabbit()));
+            }
         }
         const num_tigers = getRandomInt(2, 10);
         for (let i=0; i<num_tigers; i++) {
-            characters.push(new CharacterContainer(getRandomInt(0, 640), getRandomInt(0, 480), new Tiger()));
+            let x = getRandomInt(0, this.tile_width);
+            let y = getRandomInt(0, this.tile_height);
+            if (this.map.get(x, y).isCharacterAvailable()) {
+                characters.push(new CharacterContainer(x, y, new Tiger()));
+            }
         }
         this.characters = characters;
     }
 
     init_canvas() {
         const c = document.getElementById('game');
-        c.width = 512;
-        c.height = 480;
+        c.width = this.pixel_width;
+        c.height = this.pixel_height;
 
         this.ctx = c.getContext("2d");
         this.ctx.fillStyle="#000000";
-        this.ctx.fillRect(0,0,640,480);
+        this.ctx.fillRect(0,0,this.pixel_width,this.pixel_height);
     }
 
     run() {
@@ -160,7 +186,7 @@ class Game {
         for (let c of this.characters) {
             this.ctx.fillStyle=c.character.getColor();
             this.ctx.font="8px Helvetica";
-            this.ctx.fillText(c.character.getCharacter(), c.x, c.y, 10);
+            this.ctx.fillText(c.character.getCharacter(), c.x*this.char_size, c.y*this.char_size, 10);
         }
     }
 
@@ -169,14 +195,14 @@ class Game {
             for (let x=0, m=this.map.width; x<m; x++) {
                 const cell = this.map.get(x, y);
                 this.ctx.fillStyle=cell.getColor();
-                this.ctx.fillRect(x*10,y*10,10,10);
+                this.ctx.fillRect(x*this.tile_size,y*this.tile_size,this.tile_size,this.tile_size);
             }
         }
     }
 }
 
 function mainLoop() {
-    const game = new Game();
+    const game = new Game(1024, 768, 10, 10);
     game.run();
 }
 
