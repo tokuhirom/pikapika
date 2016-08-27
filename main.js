@@ -156,8 +156,8 @@ class Game {
     constructor(pixel_width, pixel_height, tile_size, char_size) {
         this.pixel_width = pixel_width;
         this.pixel_height = pixel_height;
-        this.tile_width = pixel_width/tile_size;
-        this.tile_height = pixel_height/tile_size;
+        this.tile_width = Math.floor(pixel_width/tile_size);
+        this.tile_height = Math.floor(pixel_height/tile_size);
         this.tile_size = tile_size;
         this.char_size = char_size;
         this.map = new Map(this.tile_width, this.tile_height);
@@ -203,7 +203,7 @@ class Game {
         setInterval(
             () => {
                 this.next_tick();
-            }, 10
+            }, 1000
         );
     }
 
@@ -240,7 +240,7 @@ class Game {
         for (let c of this.characters) {
             this.ctx.fillStyle=c.character.getColor();
             this.ctx.font="8px Helvetica";
-            this.ctx.fillText(c.character.getCharacter(), c.x*this.char_size, c.y*this.char_size, 10);
+            this.ctx.fillText(c.character.getCharacter(), c.x*this.char_size, c.y*this.char_size, this.char_size);
         }
     }
 
@@ -249,6 +249,7 @@ class Game {
             // TODO 腐敗度++
         } else {
             // TODO if rabbit on plain, eat 
+            console.log(container.x, container.y);
             const cell = this.map.get(container.x, container.y);
             const grass = cell.grass;
             if (grass > 0) {
@@ -265,6 +266,13 @@ class Game {
                 rabbit.death = true;
                 console.log(rabbit.name + " death");
             }
+
+            // Random move
+            const xMove = getRandomInt(0, 3) - 1;
+            const yMove = getRandomInt(0, 3) - 1;
+            console.log("xMove: " +  xMove);
+            container.x = Math.min(Math.max(container.x + xMove, 0), this.tile_width - 1);
+            container.y = Math.min(Math.max(container.y + yMove, 0), this.tile_height - 1);
         }
     }
 
