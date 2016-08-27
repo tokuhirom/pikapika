@@ -8,6 +8,10 @@ function getRandomInt(min, max) {
 }
 
 class ForestCell {
+    constructor() {
+        this.grass = getRandomInt(0, 20);
+    }
+
     getColor() {
         return "#008800";
     }
@@ -17,6 +21,10 @@ class ForestCell {
 }
 
 class SeaCell {
+    constructor() {
+        this.grass = getRandomInt(0, 0);
+    }
+
     getColor() {
         return "#002288";
     }
@@ -26,6 +34,10 @@ class SeaCell {
 }
 
 class GrasslandCell {
+    constructor() {
+        this.grass = getRandomInt(0, 50);
+    }
+
     getColor() {
         return "#003300";
     }
@@ -35,6 +47,10 @@ class GrasslandCell {
 }
 
 class MountainCell {
+    constructor() {
+        this.grass = getRandomInt(0, 10);
+    }
+
     getColor() {
         return "#544545";
     }
@@ -50,8 +66,16 @@ class MountainCell {
 // ----------------------------------------------------------------------
 
 class Rabbit {
+    constructor() {
+        this.hunger = 0;
+    }
+
     getCharacter() {
-        return "🐰";
+        if (this.death) {
+            return "💀";
+        } else {
+            return "🐰";
+        }
     }
 
     getColor() {
@@ -60,6 +84,10 @@ class Rabbit {
 }
 
 class Tiger {
+    constructor() {
+        this.hunger = 0;
+    }
+
     getCharacter() {
         return "🐯";
     }
@@ -161,7 +189,7 @@ class Game {
         setInterval(
             () => {
                 this.next_tick();
-            }, 1000
+            }, 100
         );
     }
 
@@ -170,6 +198,23 @@ class Game {
 
         // move characters
         // eat something?
+        for (let container of this.characters) {
+            let character = container.character;
+            if (character instanceof Rabbit) {
+                if (character.death) {
+                    // TODO 腐敗度++
+                } else {
+                    // if rabbit on plain, eat 
+                    character.hunger++;
+                    console.log("hunger++");
+
+                    if (character.hunger > 100) {
+                        character.death = true;
+                        console.log("Rabbit death"); // TODO delete
+                    }
+                }
+            }
+        }
 
         // work tigers.
         // if hungry?
