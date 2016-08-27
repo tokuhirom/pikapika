@@ -249,7 +249,7 @@ class Game {
         setInterval(
             () => {
                 this.next_tick();
-            }, 100
+            }, DEBUGGING ? 100 : 1000
         );
     }
 
