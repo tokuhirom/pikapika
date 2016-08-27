@@ -18,6 +18,10 @@ class ForestCell {
     isCharacterAvailable() {
         return true;
     }
+
+    growGrass() {
+        this.grass += 2;
+    }
 }
 
 class SeaCell {
@@ -31,6 +35,7 @@ class SeaCell {
     isCharacterAvailable() {
         return false;
     }
+    growGrass() { }
 }
 
 class GrasslandCell {
@@ -43,6 +48,10 @@ class GrasslandCell {
     }
     isCharacterAvailable() {
         return true;
+    }
+
+    growGrass() {
+        this.grass += 3;
     }
 }
 
@@ -57,6 +66,10 @@ class MountainCell {
     isCharacterAvailable() {
         return true;
     }
+
+    growGrass() {
+        this.grass += 1;
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -66,8 +79,9 @@ class MountainCell {
 // ----------------------------------------------------------------------
 
 class Rabbit {
-    constructor() {
+    constructor(name) {
         this.hunger = 0;
+        this.name = name;
     }
 
     getCharacter() {
@@ -158,7 +172,7 @@ class Game {
             let x = getRandomInt(0, this.tile_width);
             let y = getRandomInt(0, this.tile_height);
             if (this.map.get(x, y).isCharacterAvailable()) {
-                characters.push(new CharacterContainer(x, y, new Rabbit()));
+                characters.push(new CharacterContainer(x, y, new Rabbit("Rabbit " + i)));
             }
         }
         const num_tigers = getRandomInt(2, 10);
@@ -189,7 +203,7 @@ class Game {
         setInterval(
             () => {
                 this.next_tick();
-            }, 100
+            }, 10
         );
     }
 
@@ -201,18 +215,7 @@ class Game {
         for (let container of this.characters) {
             let character = container.character;
             if (character instanceof Rabbit) {
-                if (character.death) {
-                    // TODO 腐敗度++
-                } else {
-                    // if rabbit on plain, eat 
-                    character.hunger++;
-                    console.log("hunger++");
-
-                    if (character.hunger > 100) {
-                        character.death = true;
-                        console.log("Rabbit death"); // TODO delete
-                    }
-                }
+                this.work_rabbit(container, character);
             }
         }
 
@@ -227,11 +230,41 @@ class Game {
         //    hunger++
         // end
 
+        // TODO grow glasses
+        this.eachCell((x, y) => {
+            const cell = this.map.get(x, y);
+            cell.growGrass();
+        });
+
         // render characters
         for (let c of this.characters) {
             this.ctx.fillStyle=c.character.getColor();
             this.ctx.font="8px Helvetica";
             this.ctx.fillText(c.character.getCharacter(), c.x*this.char_size, c.y*this.char_size, 10);
+        }
+    }
+
+    work_rabbit(container, rabbit) {
+        if (rabbit.death) {
+            // TODO 腐敗度++
+        } else {
+            // TODO if rabbit on plain, eat 
+            const cell = this.map.get(container.x, container.y);
+            const grass = cell.grass;
+            if (grass > 0) {
+                const ate = Math.max(getRandomInt(1, grass), 10);
+                rabbit.hunger = Math.max(rabbit.hunger - ate, 0);
+                cell.grass -= ate;
+                console.log(rabbit.name + " ate " + ate + " grass(Current hunger: " + rabbit.hunger + ")");
+            }
+ 
+            rabbit.hunger++;
+            console.log("hunger++");
+
+            if (rabbit.hunger > 100) {
+                rabbit.death = true;
+                console.log(rabbit.name + " death");
+            }
         }
     }
 
@@ -241,6 +274,14 @@ class Game {
                 const cell = this.map.get(x, y);
                 this.ctx.fillStyle=cell.getColor();
                 this.ctx.fillRect(x*this.tile_size,y*this.tile_size,this.tile_size,this.tile_size);
+            }
+        }
+    }
+
+    eachCell(cb) {
+        for (let y=0, l=this.map.height; y<l; y++) {
+            for (let x=0, m=this.map.width; x<m; x++) {
+                cb(x, y);
             }
         }
     }
