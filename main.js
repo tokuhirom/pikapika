@@ -1,10 +1,21 @@
+
+const DEBUGGING = location.hash.indexOf("debug") >= 0;
+
 // Returns a random integer between min (included) and max (excluded)
-// // Using Math.round() will give you a non-uniform distribution!
-//
+// Using Math.round() will give you a non-uniform distribution!
 function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min)) + min;
+}
+
+// セカイノオワリ
+class EdgeCell {
+    constructor() { this.grass = 0; }
+
+    getColor() { return "#000000"; }
+    isCharacterAvailable() { return false; }
+    growGrass() { }
 }
 
 class ForestCell {
@@ -98,8 +109,9 @@ class Rabbit {
 }
 
 class Tiger {
-    constructor() {
+    constructor(name) {
         this.hunger = 0;
+        this.name = name;
     }
 
     getCharacter() {
@@ -152,7 +164,15 @@ class Map {
     }
 
     get(x, y) {
-        return this.cells[x + y*this.width];
+        if (x < 0 || x > this.width || y < 0 || y > this.height) {
+            return new EdgeCell();
+        }
+        const retval = this.cells[x + y*this.width];
+        if (retval) {
+            return retval;
+        } else {
+            return new EdgeCell();
+        }
     }
 }
 
@@ -171,20 +191,21 @@ class Game {
 
     put_characters() {
         const characters = [];
-        const num_rabbits = getRandomInt(2, 10);
+        const num_rabbits = Math.floor(this.tile_width * this.tile_height/20);
         for (let i=0; i<num_rabbits; i++) {
             let x = getRandomInt(0, this.tile_width);
             let y = getRandomInt(0, this.tile_height);
-            if (this.map.get(x, y).isCharacterAvailable()) {
+            const cell = this.map.get(x, y);
+            if (cell.isCharacterAvailable()) {
                 characters.push(new CharacterContainer(x, y, new Rabbit("Rabbit " + i)));
             }
         }
-        const num_tigers = getRandomInt(2, 10);
+        const num_tigers = Math.ceil(this.tile_width * this.tile_height/200);
         for (let i=0; i<num_tigers; i++) {
             let x = getRandomInt(0, this.tile_width);
             let y = getRandomInt(0, this.tile_height);
             if (this.map.get(x, y).isCharacterAvailable()) {
-                characters.push(new CharacterContainer(x, y, new Tiger()));
+                characters.push(new CharacterContainer(x, y, new Tiger("Tiger " + i)));
             }
         }
         this.characters = characters;
@@ -255,18 +276,16 @@ class Game {
             // TODO 腐敗度++
         } else {
             // TODO if rabbit on plain, eat 
-            console.log(container.x, container.y);
             const cell = this.map.get(container.x, container.y);
             const grass = cell.grass;
             if (grass > 0) {
                 const ate = Math.max(getRandomInt(1, grass), 10);
                 rabbit.hunger = Math.max(rabbit.hunger - ate, 0);
                 cell.grass -= ate;
-                console.log(rabbit.name + " ate " + ate + " grass(Current hunger: " + rabbit.hunger + ")");
+                // console.log(rabbit.name + " ate " + ate + " grass(Current hunger: " + rabbit.hunger + ")");
             }
  
             rabbit.hunger++;
-            console.log("hunger++");
 
             if (rabbit.hunger > 100) {
                 rabbit.death = true;
@@ -276,7 +295,6 @@ class Game {
             // Random move
             const xMove = getRandomInt(0, 3) - 1;
             const yMove = getRandomInt(0, 3) - 1;
-            console.log("xMove: " +  xMove);
             container.x = Math.min(Math.max(container.x + xMove, 0), this.tile_width - 1);
             container.y = Math.min(Math.max(container.y + yMove, 0), this.tile_height - 1);
         }
@@ -287,11 +305,29 @@ class Game {
             // TODO 腐敗度++
         } else {
             // TODO if tiger on plain, eat 
-            console.log(container.x, container.y);
             const cell = this.map.get(container.x, container.y);
 
+            if (tiger.hunger > (DEBUGGING ? 0 : 30)) {
+                // IF tiger is hungry, it eats rabbits in adjacent cell.
+                for (const dx of [-1, 1]) {
+                    for (const dy of [-1, 1]) {
+                        const x = container.x + dx;
+                        const y = container.y + dy;
+                        const cell = this.map.get(x, y);
+                        if (cell.isCharacterAvailable()) {
+                            for (const food of this.characters) {
+                                if (food.x == x && food.y == y && !food.death) {
+                                    food.character.death = true;
+                                    tiger.hunger = 0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             tiger.hunger++;
-            console.log("hunger++");
+            // console.log("hunger++");
 
             if (tiger.hunger > 100) {
                 tiger.death = true;
@@ -301,7 +337,6 @@ class Game {
             // Random move
             const xMove = getRandomInt(0, 3) - 1;
             const yMove = getRandomInt(0, 3) - 1;
-            console.log("xMove: " +  xMove);
             container.x = Math.min(Math.max(container.x + xMove, 0), this.tile_width - 1);
             container.y = Math.min(Math.max(container.y + yMove, 0), this.tile_height - 1);
         }
