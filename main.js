@@ -103,7 +103,11 @@ class Tiger {
     }
 
     getCharacter() {
-        return "🐯";
+        if (this.death) {
+            return "💀";
+        } else {
+            return "🐯";
+        }
     }
 
     getColor() {
@@ -203,7 +207,7 @@ class Game {
         setInterval(
             () => {
                 this.next_tick();
-            }, 1000
+            }, 100
         );
     }
 
@@ -216,6 +220,8 @@ class Game {
             let character = container.character;
             if (character instanceof Rabbit) {
                 this.work_rabbit(container, character);
+            } else if (character instanceof Tiger) {
+                this.work_tiger(container, character);
             }
         }
 
@@ -275,6 +281,32 @@ class Game {
             container.y = Math.min(Math.max(container.y + yMove, 0), this.tile_height - 1);
         }
     }
+
+    work_tiger(container, tiger) {
+        if (tiger.death) {
+            // TODO 腐敗度++
+        } else {
+            // TODO if tiger on plain, eat 
+            console.log(container.x, container.y);
+            const cell = this.map.get(container.x, container.y);
+
+            tiger.hunger++;
+            console.log("hunger++");
+
+            if (tiger.hunger > 100) {
+                tiger.death = true;
+                console.log(tiger.name + " death");
+            }
+
+            // Random move
+            const xMove = getRandomInt(0, 3) - 1;
+            const yMove = getRandomInt(0, 3) - 1;
+            console.log("xMove: " +  xMove);
+            container.x = Math.min(Math.max(container.x + xMove, 0), this.tile_width - 1);
+            container.y = Math.min(Math.max(container.y + yMove, 0), this.tile_height - 1);
+        }
+    }
+
 
     render_map() {
         for (let y=0, l=this.map.height; y<l; y++) {
