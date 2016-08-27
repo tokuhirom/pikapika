@@ -9,6 +9,27 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
+// http://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array-in-javascript
+function shuffle(array) {
+    let counter = array.length;
+
+    // While there are elements in the array
+    while (counter > 0) {
+        // Pick a random index
+        let index = Math.floor(Math.random() * counter);
+
+        // Decrease counter by 1
+        counter--;
+
+        // And swap the last element with it
+        let temp = array[counter];
+        array[counter] = array[index];
+        array[index] = temp;
+    }
+
+    return array;
+}
+
 // セカイノオワリ
 class EdgeCell {
     constructor() { this.grass = 0; }
@@ -293,10 +314,7 @@ class Game {
             }
 
             // Random move
-            const xMove = getRandomInt(0, 3) - 1;
-            const yMove = getRandomInt(0, 3) - 1;
-            container.x = Math.min(Math.max(container.x + xMove, 0), this.tile_width - 1);
-            container.y = Math.min(Math.max(container.y + yMove, 0), this.tile_height - 1);
+            this.random_move(container);
         }
     }
 
@@ -335,10 +353,32 @@ class Game {
             }
 
             // Random move
-            const xMove = getRandomInt(0, 3) - 1;
-            const yMove = getRandomInt(0, 3) - 1;
-            container.x = Math.min(Math.max(container.x + xMove, 0), this.tile_width - 1);
-            container.y = Math.min(Math.max(container.y + yMove, 0), this.tile_height - 1);
+            this.random_move(container);
+            // 山だと移動しにくいとかそういうの
+        }
+    }
+
+    random_move(container) {
+        const candidates = shuffle([
+            [-1, -1],
+            [-1, 1],
+            [-1, 0],
+            [1, -1],
+            [1, 1],
+            [1, 0],
+            [0, -1],
+            [0, 1],
+            [0, 0],
+        ]);
+        for (const candidate of candidates) {
+            const x = container.x + candidate[0];
+            const y = container.y + candidate[1];
+            const cell = this.map.get(x, y);
+            if (cell.isCharacterAvailable()) {
+                container.x = x;
+                container.y = y;
+                return;
+            }
         }
     }
 
