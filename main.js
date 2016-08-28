@@ -141,6 +141,7 @@ class Tiger {
     constructor() {
         this.hunger = 0;
         this.name = "Tiger " + ++tiger_counter;
+        this.sex = getRandomInt(0, 2) == 0 ? MALE : FEMALE;
     }
 
     getCharacter() {
@@ -263,6 +264,11 @@ class Game {
         this.characters.push(new CharacterContainer(x, y, character));
     }
 
+    removeCharacter(character) {
+        this.characters = this.characters.filter(c => c !== character);
+        console.log("# of characters: " + this.characters.length);
+    }
+
     init_canvas() {
         const c = document.getElementById('game');
         c.width = this.pixel_width;
@@ -307,18 +313,7 @@ class Game {
             }
         }
 
-        // work tigers.
-        // if hungry?
-        //    there's food?
-        //       eat(kill it, and hunger--)
-        //    else
-        //       go to food
-        //    end
-        // else
-        //    hunger++
-        // end
-
-        // TODO grow glasses
+        // grow grass
         this.eachCell((x, y) => {
             const cell = this.map.get(x, y);
             cell.growGrass();
@@ -334,9 +329,16 @@ class Game {
 
     work_rabbit(container, rabbit) {
         if (rabbit.death) {
-            // TODO 腐敗度++
+            // 腐敗度++
+            if (!rabbit.corruption) {
+                rabbit.corruption = 1;
+            }
+            rabbit.corruption++;
+            if (rabbit.corruption > 100) {
+                this.removeCharacter(rabbit);
+            }
         } else {
-            // TODO if rabbit on plain, eat 
+            // eat grass
             const cell = this.map.get(container.x, container.y);
             const grass = cell.grass;
             if (grass > 0) {
@@ -367,7 +369,7 @@ class Game {
                 const x = container.x + dx;
                 const y = container.y + dy;
                 for (const partner of this.getCharacters(x, y)) {
-                    if (character.prototype === partner.prototype) {
+                    if (character.prototype === partner.prototype && character.sex !== partner.sex) {
                         if (getRandomInt(0, 300) < 1) {
                             (() => {
                                 // 隣接の空白ますに spawn
@@ -376,8 +378,9 @@ class Game {
                                         const x = container.x + dx;
                                         const y = container.y + dy;
                                         if (this.getCharacters(x, y).length == 0) {
-                                            console.log('spawn character');
-                                            this.put_character(x, y, new character.constructor());
+                                            const child = new character.constructor();
+                                            console.log('spawn character: ' + child.name);
+                                            this.put_character(x, y, child);
                                             return;
                                         }
                                     }
@@ -435,6 +438,8 @@ class Game {
             tiger.hunger++;
             // console.log("hunger++");
 
+            this.breed(container);
+
             if (tiger.hunger > 100) {
                 tiger.death = true;
                 console.log(tiger.name + " death");
@@ -491,7 +496,7 @@ class Game {
 }
 
 function mainLoop() {
-    const game = new Game(1024, 768, 10, 10);
+    const game = new Game(1000, 700, 10, 10);
     game.run();
 }
 
