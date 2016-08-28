@@ -100,7 +100,7 @@ class MountainCell {
     }
 
     growGrass() {
-        this.grass += 1;
+        this.grass += 0;
     }
 }
 
@@ -110,10 +110,16 @@ class MountainCell {
 //
 // ----------------------------------------------------------------------
 
+const MALE = Symbol("MALE");
+const FEMALE = Symbol("FEMALE");
+
+let rabbit_counter = 0;
+
 class Rabbit {
-    constructor(name) {
+    constructor() {
         this.hunger = 0;
-        this.name = name;
+        this.name = "Rabbit " + (++rabbit_counter);
+        this.sex = getRandomInt(0, 2) == 0 ? MALE : FEMALE;
     }
 
     getCharacter() {
@@ -129,10 +135,12 @@ class Rabbit {
     }
 }
 
+let tiger_counter = 0;
+
 class Tiger {
-    constructor(name) {
+    constructor() {
         this.hunger = 0;
-        this.name = name;
+        this.name = "Tiger " + ++tiger_counter;
     }
 
     getCharacter() {
@@ -206,30 +214,53 @@ class Game {
         this.tile_size = tile_size;
         this.char_size = char_size;
         this.map = new Map(this.tile_width, this.tile_height);
-        this.put_characters();
+        this.init_characters();
         this.init_canvas();
+        this.interval = DEBUGGING ? 10 : 300;
+        document.body.onkeydown = (e) => {
+            this.keydown(e);
+        };
     }
 
-    put_characters() {
-        const characters = [];
+    init_characters() {
+        this.characters = [];
         const num_rabbits = Math.floor(this.tile_width * this.tile_height/20);
         for (let i=0; i<num_rabbits; i++) {
             let x = getRandomInt(0, this.tile_width);
             let y = getRandomInt(0, this.tile_height);
             const cell = this.map.get(x, y);
             if (cell.isCharacterAvailable()) {
-                characters.push(new CharacterContainer(x, y, new Rabbit("Rabbit " + i)));
+                this.put_character(x, y, new Rabbit());
             }
         }
-        const num_tigers = Math.ceil(this.tile_width * this.tile_height/200);
+        const num_tigers = Math.ceil(this.tile_width * this.tile_height/100);
         for (let i=0; i<num_tigers; i++) {
             let x = getRandomInt(0, this.tile_width);
             let y = getRandomInt(0, this.tile_height);
             if (this.map.get(x, y).isCharacterAvailable()) {
-                characters.push(new CharacterContainer(x, y, new Tiger("Tiger " + i)));
+                this.put_character(x, y, new Tiger());
             }
         }
-        this.characters = characters;
+    }
+
+    keydown(e) {
+        if (!e.altKey && !e.shiftKey && !e.ctrlKey) {
+            if (e.key == "1") {
+                this.interval = 300;
+            } else if (e.key == "2") {
+                this.interval = 150;
+            } else if (e.key == "3") {
+                this.interval = 70;
+            } else if (e.key == "4") {
+                this.interval = 10;
+            } else if (e.key == "5") {
+                this.interval = 1;
+            }
+        }
+    }
+
+    put_character(x, y, character) {
+        this.characters.push(new CharacterContainer(x, y, character));
     }
 
     init_canvas() {
@@ -246,14 +277,23 @@ class Game {
         this.render_map();
 
         this.next_tick();
-        setInterval(
-            () => {
-                this.next_tick();
-            }, DEBUGGING ? 100 : 1000
-        );
     }
 
     next_tick() {
+        let run;
+        run = () => {
+            try {
+                this.do_next_tick();
+            } catch (e) {
+                console.log(e);
+            } finally {
+                setTimeout(run, this.interval);
+            }
+        };
+        setTimeout(run, this.interval);
+    }
+
+    do_next_tick() {
         this.render_map();
 
         // move characters
@@ -305,6 +345,8 @@ class Game {
                 cell.grass -= ate;
                 // console.log(rabbit.name + " ate " + ate + " grass(Current hunger: " + rabbit.hunger + ")");
             }
+
+            this.breed(container);
  
             rabbit.hunger++;
 
@@ -316,6 +358,52 @@ class Game {
             // Random move
             this.random_move(container);
         }
+    }
+
+    breed(container) {
+        const character = container.character;
+        for (const dx of [-1, 1]) {
+            for (const dy of [-1, 1]) {
+                const x = container.x + dx;
+                const y = container.y + dy;
+                for (const partner of this.getCharacters(x, y)) {
+                    if (character.prototype === partner.prototype) {
+                        if (getRandomInt(0, 300) < 1) {
+                            (() => {
+                                // 隣接の空白ますに spawn
+                                for (const dx of [-1, 1]) {
+                                    for (const dy of [-1, 1]) {
+                                        const x = container.x + dx;
+                                        const y = container.y + dy;
+                                        if (this.getCharacters(x, y).length == 0) {
+                                            console.log('spawn character');
+                                            this.put_character(x, y, new character.constructor());
+                                            return;
+                                        }
+                                    }
+                                }
+                            })();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    getCharacters(x, y) {
+        const cell = this.map.get(x, y);
+        if (!cell.isCharacterAvailable()) {
+            return [];
+        }
+
+        const retval = [];
+        for (const partner of this.characters) {
+            if (partner.x == x && partner.y == y) {
+                retval.push(partner);
+            }
+        }
+        return retval;
     }
 
     work_tiger(container, tiger) {
